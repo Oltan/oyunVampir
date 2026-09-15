@@ -128,6 +128,42 @@ const EMB={
 const TEAMCOL={bad:'var(--madder)',good:'var(--sage)',solo:'var(--ochre)'};
 const TEAMNM ={bad:'Gulyabaniler',good:'Dostlar',solo:'Kendi başına'};
 
+/* ===================== RULES TEXT ===================== */
+const RULES_HTML = `
+  <h2 style="font-size:17px">Fazlar</h2>
+  <ol>
+    <li><b>Gece</b>: Gece aksiyonu olan roller kendi hedefini kendi telefonundan seçer. Aksiyonu olmayanlar (Dost, Medyum, Şakacı) bekler.</li>
+    <li><b>Sabah</b>: Moderatör "Sabahı getir"e basınca o gecenin bütün seçimleri birlikte çözülür.</li>
+    <li><b>Gündüz</b>: Herkes tartışır, sonra herkes telefonundan asılacak kişiye oy verir; moderatör uygun gördüğü kişiyi asar.</li>
+    <li>Ölen/asılan kimse konuşmaz, mimik yapmaz — ekranını izlemeye devam edebilir.</li>
+  </ol>
+  <h2 style="font-size:17px;margin-top:14px">Gece çözüm sırası</h2>
+  <ul style="padding-left:20px;margin:8px 0 0;color:var(--wool-dim);font-size:14px">
+    <li>Şifacı'nın koruduğu kişi o gece hiçbir saldırıdan ölmez.</li>
+    <li>Koruma'nın koruduğu kişiye saldırı olursa hedef kurtulur — ama saldırgan da, Koruma'nın kendisi de o gece ölür.</li>
+    <li>Tırsak ve Hayatta Kalan kendini sakladığında o gece ölmez ama hiçbir şey öğrenmez.</li>
+    <li>Avcı gulyabani olmayan (masum) birini vurursa kurbanı ölür, vicdan azabıyla Avcı da ölür.</li>
+    <li>Gulyabaniler o gece en çok oy aldıkları tek hedefte buluşup onu yer.</li>
+  </ul>
+  <h2 style="font-size:17px;margin-top:14px">Kazanma şartları</h2>
+  <ul style="padding-left:20px;margin:8px 0 0;color:var(--wool-dim);font-size:14px">
+    <li><b>Dostlar</b>: Bütün gulyabaniler ölünce kazanır.</li>
+    <li><b>Gulyabaniler</b>: Sayıları dostlara eşitlenince veya geçince kazanır.</li>
+    <li><b>Şakacı</b>: Gündüz asılırsa anında kazanır.</li>
+    <li><b>Seri Katil</b>: Gulyabani ve Dost takımlarının hepsi bitince (Hayatta Kalan'la baş başa kalsa bile) kazanır.</li>
+    <li><b>Hayatta Kalan</b>: Oyun sonuna kadar hayatta kalırsa, oyunu kim kazanırsa kazansın o da kazanmış sayılır.</li>
+  </ul>`;
+let showRules=false;
+function toggleRules(){ showRules=!showRules; lastKey=''; draw(); }
+function rulesCard(){
+  if(!showRules) return '';
+  return `<div class="card">
+    <div class="row"><h2 style="font-size:17px">Oyun kuralları</h2><span class="spacer"></span>
+      <button class="btn sm ghost" onclick="toggleRules()">Kapat</button></div>
+    ${RULES_HTML}
+  </div>`;
+}
+
 /* ===================== TINY FIREBASE REST CLIENT ===================== */
 let DB='', ROOM='', ME={pid:null,name:''}, HOST=false, room=null, poll=null, busy=false;
 const j = o => JSON.stringify(o);
@@ -189,8 +225,12 @@ function screenStart(){
       <button class="btn primary full" style="margin-top:10px" onclick="createRoom()">Oda kur</button>
       <div class="err hidden" id="err"></div>
       <p class="muted" style="margin:12px 0 0">Test modu 30 gün sonra kapanır. Kapanırsa Realtime Database → Rules'tan tarihi ileri al.</p>
-    </div>`);
+    </div>
+    <button class="btn ghost sm full" onclick="togglePreRules()">Oyun kuralları</button>
+    ${preRules?`<div class="card">${RULES_HTML}</div>`:''}`);
 }
+let preRules=false;
+function togglePreRules(){ preRules=!preRules; screenStart(); }
 async function createRoom(){
   const v=document.getElementById('dbin').value.trim();
   if(!/^https:\/\/.+/.test(v)) return fail('Adres https:// ile başlamalı.');
@@ -294,7 +334,9 @@ function hostLobby(){
           <div class="tx"><b>Dost <span class="muted" style="font-weight:400">× ${plan.plain}</span></b>
           <span class="muted">${ROLES.dost.d}</span></div></div>`}
     </div>
-    <button class="btn primary full" ${n<5?'disabled':''} onclick="dealRoles()">Rolleri dağıt ve başlat</button>`);
+    <button class="btn primary full" ${n<5?'disabled':''} onclick="dealRoles()">Rolleri dağıt ve başlat</button>
+    <button class="btn ghost sm full" style="margin-top:10px" onclick="toggleRules()">Oyun kuralları</button>
+    ${rulesCard()}`);
 }
 function buildPlan(n,preKey){
   const pre=PRESETS[preKey]||PRESETS.ilk;
@@ -352,7 +394,7 @@ async function resolveNight(){
   busy=true;
   const d=room.meta.day, acts=(room.actions&&room.actions[d])||{};
   const ps=playersArr(), by={}; ps.forEach(p=>by[p.pid]=p);
-  const blocked=new Set(), healed=new Set(), guarded=new Set(), visits={};
+  const blocked=new Set(), healed=new Set(), guarded=new Set(), guardOf={}, visits={};
 
   // Gulyabaniler tek hedefte buluşur: en çok oy alan.
   const badVotes={};
@@ -369,7 +411,7 @@ async function resolveNight(){
     const p=by[pid]; if(!p||!ROLES[p.role]) continue;
     const a=ROLES[p.role].act, t=acts[pid].target;
     if(a==='heal'&&t) healed.add(t);
-    if(a==='guard'&&t) guarded.add(t);
+    if(a==='guard'&&t){ guarded.add(t); guardOf[t]=pid; }
     if(a==='vest') healed.add(pid);
   }
   const kills=[];
@@ -383,8 +425,22 @@ async function resolveNight(){
   kills.forEach(k=>{
     if(blocked.has(k.from)) return;
     if(healed.has(k.to)){ saved.add(k.to); return; }
-    if(guarded.has(k.to)){ saved.add(k.to); if(k.from) dead.add(k.from); return; }
+    if(guarded.has(k.to)){
+      saved.add(k.to);
+      if(k.from) dead.add(k.from);
+      const g=guardOf[k.to]; if(g) dead.add(g); // Koruma bedeli: hedef kurtulur ama koruyan da ölür
+      return;
+    }
     dead.add(k.to);
+  });
+
+  // Avcı vicdanı: gerçekten bir masumu öldürdüyse kendisi de ölür
+  kills.forEach(k=>{
+    if(!k.from) return;
+    const shooter=by[k.from];
+    if(!shooter||shooter.role!=='avci'||!dead.has(k.to)) return;
+    const victim=by[k.to];
+    if(victim&&ROLES[victim.role]&&ROLES[victim.role].t!=='bad') dead.add(k.from);
   });
 
   const upd={};
@@ -443,7 +499,9 @@ function hostDay(m){
           <b>${esc(p.name)}</b><small>${tally[p.pid]||0} oy — asmak için bas</small></button>`).join('')}
       </div>
     </div>
-    <button class="btn full" onclick="toNight()">Gece olsun</button>`);
+    <button class="btn full" onclick="toNight()">Gece olsun</button>
+    <button class="btn ghost sm full" style="margin-top:10px" onclick="toggleRules()">Oyun kuralları</button>
+    ${rulesCard()}`);
   paintClock();
 }
 async function hostLynch(pid){
@@ -452,6 +510,7 @@ async function hostLynch(pid){
   busy=true;
   await api('/rooms/'+ROOM+'/players/'+pid+'/alive','PUT',false);
   await api('/rooms/'+ROOM+'/results/'+room.meta.day+'/lynched','PUT',{name:p.name,role:p.role});
+  if(p.role==='sakaci') await api('/rooms/'+ROOM+'/meta/jesterWin','PUT',true);
   busy=false; tick();
 }
 async function toNight(){
@@ -460,11 +519,18 @@ async function toNight(){
   busy=false; tick();
 }
 function checkWin(){
+  if(room.meta&&room.meta.jesterWin) return 'Şakacı kazandı (asıldığı için).';
   const a=alive();
   const bad=a.filter(p=>ROLES[p.role]&&ROLES[p.role].t==='bad').length;
   const good=a.filter(p=>ROLES[p.role]&&ROLES[p.role].t==='good').length;
-  if(bad===0&&good>0) return 'Dostlar kazandı.';
-  if(bad>=good&&bad>0) return 'Gulyabaniler kazandı.';
+  const survivors=a.filter(p=>p.role==='hayatta');
+  const note=survivors.length?' (Hayatta Kalan da kazandı: '+survivors.map(p=>esc(p.name)).join(', ')+')':'';
+  if(bad===0&&good>0) return 'Dostlar kazandı.'+note;
+  if(bad>=good&&bad>0) return 'Gulyabaniler kazandı.'+note;
+  if(bad===0&&good===0){
+    const killer=a.find(p=>p.role==='serikatil');
+    if(killer) return 'Seri Katil kazandı.'+note;
+  }
   return null;
 }
 async function endGame(){ busy=true; await api('/rooms/'+ROOM+'/meta','PATCH',{phase:'over'}); busy=false; tick(); }
@@ -478,13 +544,16 @@ function hostOver(){
         <div style="min-width:0"><b>${esc(p.name)}</b>
           <small>${ROLES[p.role]?ROLES[p.role].n:'—'}</small></div></div></div>`).join('')}
     </div></div>
-    <button class="btn primary full" onclick="newRound()">Aynı kişilerle yeni oyun</button>`);
+    <button class="btn primary full" onclick="newRound()">Aynı kişilerle yeni oyun</button>
+    <button class="btn ghost sm full" style="margin-top:10px" onclick="toggleRules()">Oyun kuralları</button>
+    ${rulesCard()}`);
 }
 async function newRound(){
   busy=true;
   await api('/rooms/'+ROOM+'/actions','PUT',null);
   await api('/rooms/'+ROOM+'/votes','PUT',null);
   await api('/rooms/'+ROOM+'/results','PUT',null);
+  await api('/rooms/'+ROOM+'/meta/jesterWin','PUT',null);
   await api('/rooms/'+ROOM+'/meta','PATCH',{phase:'lobby',day:0});
   busy=false; tick();
 }
@@ -537,7 +606,10 @@ function roleCard(me){
     <p class="muted" style="margin:12px 0 0">${r.d}</p>
     <p style="margin:6px 0 0;color:${TEAMCOL[r.t]};font-size:14px">${nightHint(r)}</p>
     ${mates.length?`<p style="margin:10px 0 0;color:var(--madder)"><b>Ekibin:</b> ${mates.map(esc).join(', ')}</p>`:''}
-    <button class="btn ghost sm full" style="margin-top:12px" onclick="toggleRoles()">Masadaki bütün roller</button>
+    <div class="row" style="margin-top:12px;gap:8px">
+      <button class="btn ghost sm" style="flex:1" onclick="toggleRoles()">Masadaki bütün roller</button>
+      <button class="btn ghost sm" style="flex:1" onclick="toggleRules()">Oyun kuralları</button>
+    </div>
   </div>`;
 }
 /* Hangi roller oyunda — bu herkese açık bilgi, kimin oynadığı değil. */
@@ -564,22 +636,24 @@ function playerLobby(me){
       <p class="muted" style="margin:8px 0 0">Herkes katılınca roller dağıtılacak. Telefonu kapatma.</p></div>
     <div class="card"><div class="row"><h2 style="font-size:17px">Masada</h2><span class="spacer"></span>
       <span class="muted">${playersArr().length} kişi</span></div>
-      <p class="muted" style="margin:8px 0 0">${playersArr().map(p=>esc(p.name)).join(' · ')}</p></div>`);
+      <p class="muted" style="margin:8px 0 0">${playersArr().map(p=>esc(p.name)).join(' · ')}</p></div>
+    <button class="btn ghost sm full" onclick="toggleRules()">Oyun kuralları</button>
+    ${rulesCard()}`);
 }
 function playerNight(me,m){
   const r=ROLES[me.role]||{}, d=m.day;
   const acts=(room.actions&&room.actions[d])||{};
   const mine=acts[ME.pid];
   const prev=(room.results&&room.results[d-1]&&room.results[d-1].info||{})[ME.pid];
-  if(r.act==='none'||!r.act) return h(roleCard(me)+rolesSheet()+
+  if(r.act==='none'||!r.act) return h(roleCard(me)+rolesSheet()+rulesCard()+
     `<div class="card"><h2 style="font-size:18px">Gece ${d}</h2>
       <p class="muted" style="margin:6px 0 0">Senin gece işin yok. Uyu, sabahı bekle.</p></div>`);
-  if(mine) return h(roleCard(me)+rolesSheet()+
+  if(mine) return h(roleCard(me)+rolesSheet()+rulesCard()+
     `<div class="card"><h2 style="font-size:18px">Seçimin kaydedildi</h2>
       <p class="muted" style="margin:6px 0 0">Hedef: <b style="color:var(--ochre)">${esc(mine.targetName||'')}</b><br>
       Diğerleri girince sabah olacak.</p></div>`);
   const targets=alive().filter(p=> r.act==='vest' ? p.pid===ME.pid : p.pid!==ME.pid || r.act==='heal');
-  h(roleCard(me)+rolesSheet()+
+  h(roleCard(me)+rolesSheet()+rulesCard()+
     (prev?`<div class="card"><p class="muted" style="margin:0">Dün gece öğrendiğin:</p>
       <p style="margin:6px 0 0">${prev}</p></div>`:'')+
     `<div class="card"><h2 style="font-size:18px">Gece ${d} — ${r.act==='vest'?'saklanmak istiyor musun?':'kimi seçiyorsun?'}</h2>
@@ -609,7 +683,7 @@ function playerDay(me,m){
   for(const v in votes){ const t=votes[v]; tally[t]=(tally[t]||0)+1; (who[t]=who[t]||[]).push(by[v]?by[v].name:'?'); }
   const live=alive(), cast=Object.keys(votes).length;
   const top=Math.max(1,...Object.values(tally));
-  h(roleCard(me)+rolesSheet()+
+  h(roleCard(me)+rolesSheet()+rulesCard()+
     `<div class="card"><h2 style="font-size:18px">Gündüz ${d}</h2>
       <p class="muted" style="margin:6px 0 0">${(res.dead&&res.dead.length)
         ? res.dead.map(x=>esc(x.name)+' öldü — '+ROLES[x.role].n).join('<br>')
@@ -659,7 +733,9 @@ function playerOver(me){
     <div class="card"><div class="plist">
       ${playersArr().map(p=>`<div class="p ${p.alive===false?'dead':''}"><b>${esc(p.name)}</b>
         <small>${ROLES[p.role]?ROLES[p.role].n:'—'}</small></div>`).join('')}
-    </div></div>`);
+    </div></div>
+    <button class="btn ghost sm full" onclick="toggleRules()">Oyun kuralları</button>
+    ${rulesCard()}`);
 }
 
 /* ===================== BOOT ===================== */
