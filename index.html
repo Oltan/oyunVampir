@@ -165,6 +165,7 @@ function rulesCard(){
 }
 
 /* ===================== TINY FIREBASE REST CLIENT ===================== */
+const DEFAULT_DB='https://ahlatlibel-42057-default-rtdb.europe-west1.firebasedatabase.app';
 let DB='', ROOM='', ME={pid:null,name:''}, HOST=false, room=null, poll=null, busy=false;
 const j = o => JSON.stringify(o);
 async function api(path, method='GET', body){
@@ -180,7 +181,7 @@ const rid = n => Array.from({length:n},()=>'ABCDEFGHJKLMNPRSTUVYZ'[Math.floor(Ma
 /* ===================== URL STATE ===================== */
 function readHash(){
   const h=new URLSearchParams(location.hash.slice(1));
-  DB=h.get('db')||''; ROOM=h.get('room')||'';
+  DB=h.get('db')||DEFAULT_DB; ROOM=h.get('room')||'';
   ME.pid=h.get('pid')||null; HOST=h.get('host')==='1';
 }
 function writeHash(){
@@ -213,18 +214,12 @@ function screenStart(){
       <p class="muted" style="margin:6px 0 0">Herkes kendi telefonundan oynar. Sen odayı kurarsın, arkadaşların linke tıklar.</p>
     </div>
     <div class="card">
-      <h2 style="font-size:17px">Bir kereye mahsus kurulum</h2>
-      <ol>
-        <li>console.firebase.google.com adresine gir, Google hesabınla "Add project" de. İsim ver, Analytics'i kapat, oluştur.</li>
-        <li>Soldaki menüden <b>Build → Realtime Database → Create Database</b>. Bölge farketmez. <b>"Start in test mode"</b> seç.</li>
-        <li>Açılan sayfanın üstündeki adresi kopyala. Şuna benzer:<br>
-            <span class="muted">https://adin-default-rtdb.firebaseio.com</span></li>
-        <li>Aşağıya yapıştır. Bir daha sormayacağım.</li>
-      </ol>
-      <input type="text" id="dbin" placeholder="https://...firebaseio.com" value="${esc(DB)}" autocapitalize="off" autocorrect="off">
+      <h2 style="font-size:17px">Oda kur</h2>
+      <p class="muted" style="margin:6px 0 0">Veritabanı adresi zaten tanımlı, bir şey yapmana gerek yok. Farklı bir adres kullanmak istersen aşağıdan değiştirebilirsin.</p>
+      <input type="text" id="dbin" placeholder="https://...firebasedatabase.app" value="${esc(DB)}" autocapitalize="off" autocorrect="off" style="margin-top:10px">
       <button class="btn primary full" style="margin-top:10px" onclick="createRoom()">Oda kur</button>
       <div class="err hidden" id="err"></div>
-      <p class="muted" style="margin:12px 0 0">Test modu 30 gün sonra kapanır. Kapanırsa Realtime Database → Rules'tan tarihi ileri al.</p>
+      <p class="muted" style="margin:12px 0 0">Test modu 30 gün sonra kapanır. Kapanırsa Firebase konsolunda Realtime Database → Rules'tan tarihi ileri al.</p>
     </div>
     <button class="btn ghost sm full" onclick="togglePreRules()">Oyun kuralları</button>
     ${preRules?`<div class="card">${RULES_HTML}</div>`:''}`);
