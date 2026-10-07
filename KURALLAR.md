@@ -11,7 +11,7 @@ her ekranda "Oyun kuralları" butonuyla aynı metne ulaşılabilir.
 | Dost | İyi | Gece aksiyonu yok. |
 | Şifacı | İyi | Her gece bir kişiyi ölümden korur. |
 | Bekçi | İyi | Seçtiği kişinin gulyabani olup olmadığını öğrenir. |
-| Gözcü | İyi | Seçtiği kişiyi o gece kimlerin ziyaret ettiğini görür. |
+| Gözcü | İyi | Seçtiği kişiyi o gece kimlerin ziyaret ettiğini görür; ziyaretçilerden gulyabani olanlar ayrıca belirtilir. |
 | Uyurgezer | İyi | Seçtiği kişinin gece dışarı çıkıp çıkmadığını öğrenir. |
 | Avcı | İyi | Gece birini vurur. **Masum vurursa vicdanı kendisini de öldürür.** |
 | Koruma | İyi | Koruduğu kişiye saldırı olursa hedef kurtulur; **saldırgan ve Koruma'nın kendisi ölür.** |

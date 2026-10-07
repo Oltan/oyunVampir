@@ -78,7 +78,7 @@ const ROLES = {
   dost:     {n:'Dost',      t:'good', act:'none',  d:'Gece aksiyonun yok. Gündüz konuş, şüphelen, oy ver.'},
   sifaci:   {n:'Şifacı',    t:'good', act:'heal',  d:'Her gece bir kişiyi ölümden korursun.'},
   bekci:    {n:'Bekçi',     t:'good', act:'check', d:'Seçtiğin kişinin gulyabani olup olmadığını öğrenirsin.'},
-  gozcu:    {n:'Gözcü',     t:'good', act:'watch', d:'Seçtiğin kişiyi o gece kimlerin ziyaret ettiğini görürsün.'},
+  gozcu:    {n:'Gözcü',     t:'good', act:'watch', d:'Seçtiğin kişiyi o gece kimlerin ziyaret ettiğini görürsün; gulyabaniler ayrıca belirtilir.'},
   uyurgezer:{n:'Uyurgezer', t:'good', act:'watch', d:'Seçtiğin kişinin gece dışarı çıkıp çıkmadığını öğrenirsin.'},
   avci:     {n:'Avcı',      t:'good', act:'kill',  d:'Gece birini vurursun. Masum vurursan vicdanın seni bitirir.'},
   koruma:   {n:'Koruma',    t:'good', act:'guard', d:'Koruduğun kişiye saldırı olursa o kurtulur, saldırgan ve sen ölürsün.'},
@@ -452,9 +452,16 @@ async function resolveNight(){
     if(a==='check'&&t) info[pid]= by[t].role==='gulyabani'
         ? esc(by[t].name)+' GULYABANİ.' : esc(by[t].name)+' temiz görünüyor.';
     if(a==='watch'&&t){
-      const v=(visits[t]||[]).filter(x=>x!==pid).map(x=>by[x].name);
-      info[pid]= v.length? esc(by[t].name)+' şu kişilerce ziyaret edildi: '+v.map(esc).join(', ')
-                         : esc(by[t].name)+'—kimse uğramadı.';
+      const v=(visits[t]||[]).filter(x=>x!==pid);
+      if(!v.length) info[pid]=esc(by[t].name)+'—kimse uğramadı.';
+      else if(p.role==='gozcu'){
+        const names=list=>list.map(x=>esc(by[x].name)).join(', ');
+        const wolves=v.filter(x=>by[x].role==='gulyabani'), others=v.filter(x=>by[x].role!=='gulyabani');
+        info[pid]=esc(by[t].name)+' bu gece ziyaret edildi.'
+          +(wolves.length?'<br><b style="color:var(--madder)">Gulyabaniler:</b> '+names(wolves):'')
+          +(others.length?'<br>Diğer ziyaretçiler: '+names(others):'');
+      }
+      else info[pid]=esc(by[t].name)+' şu kişilerce ziyaret edildi: '+v.map(x=>esc(by[x].name)).join(', ');
     }
     if(a==='vest') info[pid]='Saklandın. Bu gece sana bir şey olmadı.';
   }
