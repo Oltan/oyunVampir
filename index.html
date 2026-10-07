@@ -382,7 +382,10 @@ function hostNight(m){
     </div>
     <button class="btn primary full" onclick="resolveNight()">
       ${done.length<need.length?'Beklemeden sabahı getir':'Sabahı getir'}</button>
-    <p class="muted" style="text-align:center;margin-top:10px">Girmeyenler o gece pas geçmiş sayılır.</p>`);
+    <p class="muted" style="text-align:center;margin-top:10px">Girmeyenler o gece pas geçmiş sayılır.</p>
+    <button class="btn ghost sm full" style="margin-top:10px" onclick="toggleRules()">Oyun kuralları</button>
+    ${rulesCard()}
+    <button class="btn ghost sm full" style="margin-top:10px;color:var(--madder)" onclick="resetMidGame()">Oyunu sıfırla</button>`);
 }
 
 async function resolveNight(){
@@ -496,7 +499,8 @@ function hostDay(m){
     </div>
     <button class="btn full" onclick="toNight()">Gece olsun</button>
     <button class="btn ghost sm full" style="margin-top:10px" onclick="toggleRules()">Oyun kuralları</button>
-    ${rulesCard()}`);
+    ${rulesCard()}
+    <button class="btn ghost sm full" style="margin-top:10px;color:var(--madder)" onclick="resetMidGame()">Oyunu sıfırla</button>`);
   paintClock();
 }
 async function hostLynch(pid){
@@ -551,6 +555,10 @@ async function newRound(){
   await api('/rooms/'+ROOM+'/meta/jesterWin','PUT',null);
   await api('/rooms/'+ROOM+'/meta','PATCH',{phase:'lobby',day:0});
   busy=false; tick();
+}
+async function resetMidGame(){
+  if(!confirm('Oyun bitmeden sıfırlamak istediğine emin misin? Bu turun bütün ilerlemesi (geceler, oylar) silinir, herkes lobiye döner.')) return;
+  await newRound();
 }
 
 /* ---------- CLOCK (host only) ---------- */
