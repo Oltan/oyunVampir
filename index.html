@@ -646,6 +646,19 @@ function playerLobby(me){
     <button class="btn ghost sm full" onclick="toggleRules()">Oyun kuralları</button>
     ${rulesCard()}`);
 }
+function wolfPicksCard(me,acts){
+  if(me.role!=='gulyabani') return '';
+  const mates=alive().filter(p=>p.role==='gulyabani'&&p.pid!==me.pid);
+  if(!mates.length) return '';
+  return `<div class="card">
+    <p class="muted" style="margin:0 0 6px">Diğer gulyabanilerin seçimi</p>
+    ${mates.map(p=>{ const a=acts[p.pid];
+      return `<div class="row" style="margin-bottom:4px"><b style="flex:1">${esc(p.name)}</b>
+        <span class="muted">${a?esc(a.targetName||'Pas'):'henüz seçmedi'}</span></div>`;
+    }).join('')}
+    <p class="muted" style="margin:8px 0 0">Hepiniz aynı kişiyi seçmezseniz o gece kimse ölmez.</p>
+  </div>`;
+}
 function playerNight(me,m){
   const r=ROLES[me.role]||{}, d=m.day;
   const acts=(room.actions&&room.actions[d])||{};
@@ -654,12 +667,12 @@ function playerNight(me,m){
   if(r.act==='none'||!r.act) return h(roleCard(me)+rolesSheet()+rulesCard()+
     `<div class="card"><h2 style="font-size:18px">Gece ${d}</h2>
       <p class="muted" style="margin:6px 0 0">Senin gece işin yok. Uyu, sabahı bekle.</p></div>`);
-  if(mine) return h(roleCard(me)+rolesSheet()+rulesCard()+
+  if(mine) return h(roleCard(me)+rolesSheet()+rulesCard()+wolfPicksCard(me,acts)+
     `<div class="card"><h2 style="font-size:18px">Seçimin kaydedildi</h2>
       <p class="muted" style="margin:6px 0 0">Hedef: <b style="color:var(--ochre)">${esc(mine.targetName||'')}</b><br>
       Diğerleri girince sabah olacak.</p></div>`);
   const targets=alive().filter(p=> r.act==='vest' ? p.pid===ME.pid : p.pid!==ME.pid || r.act==='heal');
-  h(roleCard(me)+rolesSheet()+rulesCard()+
+  h(roleCard(me)+rolesSheet()+rulesCard()+wolfPicksCard(me,acts)+
     (prev?`<div class="card"><p class="muted" style="margin:0">Dün gece öğrendiğin:</p>
       <p style="margin:6px 0 0">${prev}</p></div>`:'')+
     `<div class="card"><h2 style="font-size:18px">Gece ${d} — ${r.act==='vest'?'saklanmak istiyor musun?':'kimi seçiyorsun?'}</h2>
