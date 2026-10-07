@@ -534,8 +534,9 @@ function checkWin(){
 }
 async function endGame(){ busy=true; await api('/rooms/'+ROOM+'/meta','PATCH',{phase:'over'}); busy=false; tick(); }
 function hostOver(){
-  h(`<div class="card accent"><h1 style="font-size:26px">Oyun bitti</h1>
-      <p class="muted" style="margin:6px 0 0">${checkWin()||''}</p></div>
+  const manual=room.meta&&room.meta.manualReset;
+  h(`<div class="card accent"><h1 style="font-size:26px">${manual?'Oyun sıfırlandı':'Oyun bitti'}</h1>
+      <p class="muted" style="margin:6px 0 0">${manual?'Roller açıklandı, aşağıdan devam et.':(checkWin()||'')}</p></div>
     <div class="card"><div class="plist">
       ${playersArr().map(p=>`<div class="p ${p.alive===false?'dead':''}">
         <div class="row"><div class="emb s" style="color:${ROLES[p.role]?TEAMCOL[ROLES[p.role].t]:'var(--wool-dim)'}">
@@ -553,12 +554,15 @@ async function newRound(){
   await api('/rooms/'+ROOM+'/votes','PUT',null);
   await api('/rooms/'+ROOM+'/results','PUT',null);
   await api('/rooms/'+ROOM+'/meta/jesterWin','PUT',null);
+  await api('/rooms/'+ROOM+'/meta/manualReset','PUT',null);
   await api('/rooms/'+ROOM+'/meta','PATCH',{phase:'lobby',day:0});
   busy=false; tick();
 }
 async function resetMidGame(){
-  if(!confirm('Oyun bitmeden sıfırlamak istediğine emin misin? Bu turun bütün ilerlemesi (geceler, oylar) silinir, herkes lobiye döner.')) return;
-  await newRound();
+  if(!confirm('Oyun bitmeden sıfırlamak istediğine emin misin? Herkesin rolü açıklanacak ve bu turun ilerlemesi (geceler, oylar) silinecek.')) return;
+  busy=true;
+  await api('/rooms/'+ROOM+'/meta','PATCH',{phase:'over',manualReset:true});
+  busy=false; tick();
 }
 
 /* ---------- CLOCK (host only) ---------- */
@@ -731,8 +735,9 @@ function playerDead(me,m){
     </div></div>`);
 }
 function playerOver(me){
-  h(`<div class="card accent"><h1 style="font-size:26px">Oyun bitti</h1>
-      <p class="muted" style="margin:6px 0 0">${checkWin()||''}</p></div>
+  const manual=room.meta&&room.meta.manualReset;
+  h(`<div class="card accent"><h1 style="font-size:26px">${manual?'Oyun sıfırlandı':'Oyun bitti'}</h1>
+      <p class="muted" style="margin:6px 0 0">${manual?'Moderatör oyunu sıfırladı, roller açıklandı.':(checkWin()||'')}</p></div>
     <div class="card"><div class="plist">
       ${playersArr().map(p=>`<div class="p ${p.alive===false?'dead':''}"><b>${esc(p.name)}</b>
         <small>${ROLES[p.role]?ROLES[p.role].n:'—'}</small></div>`).join('')}
