@@ -383,9 +383,23 @@ function hostNight(m){
     <button class="btn primary full" onclick="resolveNight()">
       ${done.length<need.length?'Beklemeden sabahı getir':'Sabahı getir'}</button>
     <p class="muted" style="text-align:center;margin-top:10px">Girmeyenler o gece pas geçmiş sayılır.</p>
+    ${hostRolesCard()}
     <button class="btn ghost sm full" style="margin-top:10px" onclick="toggleRules()">Oyun kuralları</button>
     ${rulesCard()}
     <button class="btn ghost sm full" style="margin-top:10px;color:var(--madder)" onclick="resetMidGame()">Oyunu sıfırla</button>`);
+}
+
+let showHostRoles=false;
+function toggleHostRoles(){ showHostRoles=!showHostRoles; lastKey=''; draw(); }
+function hostRolesCard(){
+  const btn=`<button class="btn ghost sm full" style="margin-top:10px" onclick="toggleHostRoles()">${showHostRoles?'Rolleri gizle':'Rolleri göster (sadece moderatör)'}</button>`;
+  if(!showHostRoles) return btn;
+  return btn+`<div class="card" style="margin-top:10px"><div class="plist">
+    ${playersArr().map(p=>{ const r=ROLES[p.role];
+      return `<div class="p ${p.alive===false?'dead':''}"><b>${esc(p.name)}</b>
+        <small style="color:${r?TEAMCOL[r.t]:'inherit'}">${r?r.n:'—'}${p.alive===false?' · ölü':''}</small></div>`;
+    }).join('')}
+  </div></div>`;
 }
 
 async function resolveNight(){
@@ -504,6 +518,7 @@ function hostDay(m){
       </div>
     </div>
     <button class="btn full" onclick="toNight()">Gece olsun</button>
+    ${hostRolesCard()}
     <button class="btn ghost sm full" style="margin-top:10px" onclick="toggleRules()">Oyun kuralları</button>
     ${rulesCard()}
     <button class="btn ghost sm full" style="margin-top:10px;color:var(--madder)" onclick="resetMidGame()">Oyunu sıfırla</button>`);

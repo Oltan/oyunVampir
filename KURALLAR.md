@@ -65,6 +65,8 @@ her ekranda "Oyun kuralları" butonuyla aynı metne ulaşılabilir.
 1. Lobide isimlerin gelmesini izle.
 2. Set seç (İlk oyun / Geniş / Sert).
 3. En az 5 kişi katılınca "Rolleri dağıt ve başlat"a bas.
-4. Gece: kaç kişinin girdiğini izle, "Sabahı getir"e bas.
+4. Gece: kaç kişinin girdiğini izle, "Sabahı getir"e bas. Kimin hangi rolde
+   olduğunu görmek için gece/gündüz ekranındaki "Rolleri göster" düğmesini kullan
+   (varsayılan olarak kapalıdır, oyunculara göstermemeye dikkat et).
 5. Gündüz: süreyi başlat, oyları izle, asılacak isme bas, "Gece olsun"a bas.
 6. Ekranda kazanma mesajı çıkınca "Oyunu bitir ve rolleri aç"a bas.
