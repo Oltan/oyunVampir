@@ -74,7 +74,7 @@
 <script>
 /* ===================== ROLES ===================== */
 const ROLES = {
-  gulyabani:{n:'Gulyabani', t:'bad',  act:'kill',  team:1, d:'Gece bir dostu yersin. Diğer gulyabanileri görürsün.'},
+  gulyabani:{n:'Gulyabani', t:'bad',  act:'kill',  team:1, d:'Gece bir dostu yersin ama hepiniz aynı kişiyi seçmelisiniz — anlaşamazsanız kimse ölmez. Diğer gulyabanileri görürsün.'},
   dost:     {n:'Dost',      t:'good', act:'none',  d:'Gece aksiyonun yok. Gündüz konuş, şüphelen, oy ver.'},
   sifaci:   {n:'Şifacı',    t:'good', act:'heal',  d:'Her gece bir kişiyi ölümden korursun.'},
   bekci:    {n:'Bekçi',     t:'good', act:'check', d:'Seçtiğin kişinin gulyabani olup olmadığını öğrenirsin.'},
@@ -143,7 +143,7 @@ const RULES_HTML = `
     <li>Koruma'nın koruduğu kişiye saldırı olursa hedef kurtulur — ama saldırgan da, Koruma'nın kendisi de o gece ölür.</li>
     <li>Tırsak ve Hayatta Kalan kendini sakladığında o gece ölmez ama hiçbir şey öğrenmez.</li>
     <li>Avcı gulyabani olmayan (masum) birini vurursa kurbanı ölür, vicdan azabıyla Avcı da ölür.</li>
-    <li>Gulyabaniler o gece en çok oy aldıkları tek hedefte buluşup onu yer.</li>
+    <li>Gulyabaniler ancak hepsi aynı hedefte anlaşırsa birini yer — anlaşamazlarsa o gece kimse ölmez.</li>
   </ul>
   <h2 style="font-size:17px;margin-top:14px">Kazanma şartları</h2>
   <ul style="padding-left:20px;margin:8px 0 0;color:var(--wool-dim);font-size:14px">
@@ -394,16 +394,15 @@ async function resolveNight(){
   const ps=playersArr(), by={}; ps.forEach(p=>by[p.pid]=p);
   const blocked=new Set(), healed=new Set(), guarded=new Set(), guardOf={}, visits={};
 
-  // Gulyabaniler tek hedefte buluşur: en çok oy alan.
-  const badVotes={};
+  // Gulyabaniler ancak hepsi aynı hedefte anlaşırsa birini yer; anlaşamazlarsa kimse ölmez.
+  const badTargets=new Set();
   for(const pid in acts){
     const p=by[pid]; if(!p||!ROLES[p.role]) continue;
     const t=acts[pid].target; if(!t) continue;
     (visits[t]=visits[t]||[]).push(pid);
-    if(p.role==='gulyabani') badVotes[t]=(badVotes[t]||0)+1;
+    if(p.role==='gulyabani') badTargets.add(t);
   }
-  let badTarget=null,best=0;
-  for(const t in badVotes) if(badVotes[t]>best){best=badVotes[t];badTarget=t;}
+  const badTarget = badTargets.size===1 ? [...badTargets][0] : null;
 
   for(const pid in acts){
     const p=by[pid]; if(!p||!ROLES[p.role]) continue;

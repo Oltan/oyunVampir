@@ -7,7 +7,7 @@ her ekranda "Oyun kuralları" butonuyla aynı metne ulaşılabilir.
 
 | Rol | Takım | Gece işi |
 |---|---|---|
-| Gulyabani | Kötü | Her gece bir dostu yer. Diğer gulyabanileri görür. |
+| Gulyabani | Kötü | Her gece bir dostu yemeye çalışır, ama hepsi aynı kişiyi seçmezse kimse ölmez. Diğer gulyabanileri görür. |
 | Dost | İyi | Gece aksiyonu yok. |
 | Şifacı | İyi | Her gece bir kişiyi ölümden korur. |
 | Bekçi | İyi | Seçtiği kişinin gulyabani olup olmadığını öğrenir. |
@@ -40,7 +40,7 @@ her ekranda "Oyun kuralları" butonuyla aynı metne ulaşılabilir.
    öğrenmez.
 4. Avcı, gulyabani olmayan (masum) birini vurursa kurbanı ölür ve vicdan
    azabıyla Avcı da ölür.
-5. Gulyabaniler o gece en çok oy aldıkları tek hedefte buluşup onu yer.
+5. Gulyabaniler ancak hepsi aynı hedefte anlaşırsa birini yer — anlaşamazlarsa o gece kimse ölmez.
 
 ## Kazanma Şartları
 
