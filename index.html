@@ -43,6 +43,7 @@
   .p b{display:block;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .p small{color:var(--wool-dim);font-size:12px}
   .p.dead{opacity:.42} .p.dead b{text-decoration:line-through;text-decoration-color:var(--madder)}
+  .p.dead b::before{content:"❌";display:inline-block;margin-right:5px;text-decoration:none}
   .p.sel{border-color:var(--ochre);background:var(--night-3)}
   .p.ok{border-color:var(--sage)}
   .row{display:flex;gap:10px;align-items:center}
@@ -204,6 +205,7 @@ function playersArr(){
   return Object.keys(p).map(k=>({pid:k,...p[k]})).sort((a,b)=>(a.joined||0)-(b.joined||0));
 }
 const alive = () => playersArr().filter(p=>p.alive!==false);
+const deadTile = (p,style='') => `<div class="p dead"${style?` style="${style}"`:''}><b>${esc(p.name)}</b><small>öldü</small></div>`;
 const meP   = () => playersArr().find(p=>p.pid===ME.pid);
 
 /* ===================== SCREEN: FIRST RUN ===================== */
@@ -367,7 +369,8 @@ async function dealRoles(){
 
 function hostNight(m){
   const d=m.day, acts=(room.actions&&room.actions[d])||{};
-  const need=alive().filter(p=>ROLES[p.role]&&ROLES[p.role].act!=='none');
+  const actors=playersArr().filter(p=>ROLES[p.role]&&ROLES[p.role].act!=='none');
+  const need=actors.filter(p=>p.alive!==false);
   const done=need.filter(p=>acts[p.pid]);
   h(`<div class="card accent">
       <p class="muted" style="margin:0">Gece ${d}</p>
@@ -376,7 +379,7 @@ function hostNight(m){
     </div>
     <div class="card">
       <div class="plist">
-        ${need.map(p=>`<div class="p ${acts[p.pid]?'ok':''}">
+        ${actors.map(p=>p.alive===false?deadTile(p):`<div class="p ${acts[p.pid]?'ok':''}">
            <b>${esc(p.name)}</b><small>${acts[p.pid]?'girdi':'bekleniyor'}</small></div>`).join('')}
       </div>
     </div>
@@ -491,7 +494,7 @@ function hostDay(m){
   const d=m.day, res=(room.results&&room.results[d])||{dead:[],info:{}};
   const votes=(room.votes&&room.votes[d])||{};
   const tally={}; for(const v in votes){ const t=votes[v]; tally[t]=(tally[t]||0)+1; }
-  const ps=alive();
+  const ps=playersArr(), liveCount=alive().length;
   const win=checkWin();
   h(`<div class="card accent">
       <p class="muted" style="margin:0">Gündüz ${d}</p>
@@ -511,9 +514,9 @@ function hostDay(m){
     </div>
     <div class="card">
       <div class="row"><h2 style="font-size:17px">Oylar</h2><span class="spacer"></span>
-        <span class="muted">${Object.keys(votes).length} / ${ps.length} oy verdi</span></div>
+        <span class="muted">${Object.keys(votes).length} / ${liveCount} oy verdi</span></div>
       <div class="plist" style="margin-top:10px">
-        ${ps.map(p=>`<button class="p ${tally[p.pid]?'sel':''}" onclick="hostLynch('${p.pid}')">
+        ${ps.map(p=>p.alive===false?deadTile(p):`<button class="p ${tally[p.pid]?'sel':''}" onclick="hostLynch('${p.pid}')">
           <b>${esc(p.name)}</b><small>${tally[p.pid]||0} oy — asmak için bas</small></button>`).join('')}
       </div>
     </div>
@@ -693,7 +696,7 @@ function playerNight(me,m){
     `<div class="card"><h2 style="font-size:18px">Seçimin kaydedildi</h2>
       <p class="muted" style="margin:6px 0 0">Hedef: <b style="color:var(--ochre)">${esc(mine.targetName||'')}</b><br>
       Diğerleri girince sabah olacak.</p></div>`);
-  const targets=alive().filter(p=> r.act==='vest' ? p.pid===ME.pid : p.pid!==ME.pid || r.act==='heal');
+  const targets=playersArr().filter(p=> p.pid!==ME.pid || r.act==='heal');
   h(roleCard(me)+rolesSheet()+rulesCard()+wolfPicksCard(me,acts)+
     (prev?`<div class="card"><p class="muted" style="margin:0">Dün gece öğrendiğin:</p>
       <p style="margin:6px 0 0">${prev}</p></div>`:'')+
@@ -701,7 +704,7 @@ function playerNight(me,m){
       <div class="plist" style="margin-top:12px">
         ${r.act==='vest'
           ? `<button class="p" onclick="submitAction('${ME.pid}','Kendim')"><b>Saklan</b><small>bu gece ölmezsin</small></button>`
-          : targets.map(p=>`<button class="p" onclick="submitAction('${p.pid}','${esc(p.name)}')">
+          : targets.map(p=>p.alive===false?deadTile(p):`<button class="p" onclick="submitAction('${p.pid}','${esc(p.name)}')">
               <b>${esc(p.name)}</b><small>seç</small></button>`).join('')}
       </div>
       <button class="btn ghost sm full" style="margin-top:12px" onclick="submitAction('','Pas')">Bu gece pas</button>
@@ -738,7 +741,8 @@ function playerDay(me,m){
       <p class="muted" style="margin:4px 0 12px">${mine
         ? 'Oyunu verdin. Fikrin değişirse başka birine basman yeter.'
         : 'Kimin asılmasını istiyorsun?'}</p>
-      ${live.filter(p=>p.pid!==ME.pid).map(p=>{
+      ${playersArr().filter(p=>p.pid!==ME.pid).map(p=>{
+        if(p.alive===false) return deadTile(p,'margin-bottom:8px');
         const n=tally[p.pid]||0;
         return `<button class="p ${mine===p.pid?'sel':''}" style="margin-bottom:8px" onclick="castVote('${p.pid}')">
           <div class="row"><b style="flex:1">${esc(p.name)}</b>
